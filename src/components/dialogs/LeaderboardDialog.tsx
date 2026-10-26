@@ -37,24 +37,52 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
   }, [initialMetric, initialTitle]);
 
   useEffect(() => {
-    let mounted = true;
-    setLoading(true);
+    // 1. Immediately display the real-time leaderboard from local repository (0ms delay)
+    const initialList = repository.getLeaderboard(selectedMetric);
+    setUsers(initialList.slice(0, 20));
+    setLoading(false);
 
+    let mounted = true;
     getTopUsersByMetric(selectedMetric, 20)
       .then((firebaseUsers) => {
         if (!mounted) return;
         if (firebaseUsers && firebaseUsers.length > 0) {
-          setUsers(firebaseUsers);
+          // Merge current user's real-time score so their rank matches their live points
+          const liveStats = repository.getAppStats(repository.getTodayKey());
+          let liveScore = liveStats.totalLifetimePoints;
+          if (selectedMetric === 'todayPoints') liveScore = liveStats.todayPoints;
+          else if (selectedMetric === 'yesterdayPoints') liveScore = liveStats.yesterdayPoints;
+          else if (selectedMetric === 'totalPoints7Days') liveScore = liveStats.totalPoints7Days;
+          else if (selectedMetric === 'totalPoints30Days') liveScore = liveStats.totalPoints30Days;
+          else if (selectedMetric === 'highScore30Days') liveScore = liveStats.highScore30Days;
+
+          const updatedList = firebaseUsers.map((u) => {
+            if (u.isCurrentUser) {
+              return { ...u, points: Math.max(u.points, liveScore) };
+            }
+            return u;
+          });
+
+          updatedList.sort((a, b) => b.points - a.points);
+          let currentRank = 1;
+          const finalRanked = updatedList.map((u, idx) => {
+            if (idx > 0 && u.points < updatedList[idx - 1].points) {
+              currentRank++;
+            }
+            return {
+              ...u,
+              rank: u.points === 0 ? 0 : currentRank
+            };
+          });
+
+          setUsers(finalRanked.slice(0, 20));
         } else {
-          setUsers(repository.getLeaderboard(selectedMetric));
+          setUsers(repository.getLeaderboard(selectedMetric).slice(0, 20));
         }
       })
       .catch(() => {
         if (!mounted) return;
-        setUsers(repository.getLeaderboard(selectedMetric));
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
+        setUsers(repository.getLeaderboard(selectedMetric).slice(0, 20));
       });
 
     return () => {

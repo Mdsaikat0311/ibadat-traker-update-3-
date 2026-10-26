@@ -32,7 +32,6 @@ import {
   updateProfile,
   syncStateToFirebase,
   fetchUserCloudState,
-  fetchUserRank,
   fetchFirebaseChampion,
   fetchUserAccountLifetimePoints,
   fetchUserPointsHistory,
@@ -89,8 +88,6 @@ export const App: React.FC = () => {
   const [lifetimeStartDate, setLifetimeStartDate] = useState<string>(repository.getLifetimeStartDate());
   const [isQuranReading, setIsQuranReading] = useState<boolean>(false);
 
-  // Live Firebase User Ranks cache
-  const [userRanks, setUserRanks] = useState<Record<string, number>>({});
   const [communityUpdateTick, setCommunityUpdateTick] = useState<number>(0);
 
   // Modals
@@ -146,6 +143,7 @@ export const App: React.FC = () => {
     if (champ) {
       setYesterdayChampion(champ);
     }
+
 
     // Dynamic Nightly Notifications update moved to background doSync
     if (!auth.currentUser) return;
@@ -235,24 +233,7 @@ export const App: React.FC = () => {
 
     // 2. Ranks & Lifetime Points for logged-in user
     if (auth.currentUser) {
-      const metrics = [
-        'todayPoints',
-        'yesterdayPoints',
-        'totalPoints7Days',
-        'totalPoints30Days',
-        'totalPoints',
-        'highScore30Days'
-      ];
-      const ranksObj: Record<string, number> = {};
-      await Promise.all(
-        metrics.map(async (m) => {
-          const r = await fetchUserRank(m);
-          if (r !== null) {
-            ranksObj[m] = r;
-          }
-        })
-      );
-      setUserRanks(ranksObj);
+      setCommunityUpdateTick((prev) => prev + 1);
 
       // Verify and set account lifetime points and pointsHistory from Firebase
       try {
@@ -605,7 +586,6 @@ export const App: React.FC = () => {
     setCurrentUser(null);
     setCurrentViewingDate(repository.getTodayKey());
     refreshAll();
-    setUserRanks({});
     showAlert("লগ আউট সফলভাবে সম্পন্ন হয়েছে।", true);
   };
 
@@ -617,9 +597,8 @@ export const App: React.FC = () => {
     saveToFirebaseCloud();
   };
 
-  // User Rank resolver (uses live Firebase rank if available, else local)
-  const getMyRank = (metric: string): number => {
-    if (!currentUser) return 0;
+  // User Rank resolver: dynamically evaluates live dense rank in real time as points change
+  const getMyRank = useCallback((metric: string): number => {
     const stats = repository.getAppStats(repository.getTodayKey());
     let currentScore = stats.totalLifetimePoints;
     if (metric === "todayPoints") currentScore = stats.todayPoints;
@@ -629,13 +608,10 @@ export const App: React.FC = () => {
     else if (metric === "highScore30Days") currentScore = stats.highScore30Days;
     if (currentScore === 0) return 0;
 
-    if (userRanks[metric] !== undefined && userRanks[metric] !== null) {
-      return userRanks[metric];
-    }
     const list = repository.getLeaderboard(metric);
     const found = list.find((u) => u.isCurrentUser);
     return found ? found.rank : 0;
-  };
+  }, [communityUpdateTick, appStats]);
 
   // Header display calculations
   const headerInfo = useMemo(() => {

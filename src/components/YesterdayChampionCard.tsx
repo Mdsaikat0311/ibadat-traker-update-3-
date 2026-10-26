@@ -15,9 +15,9 @@ export const YesterdayChampionCard: React.FC<YesterdayChampionCardProps> = ({
   const users: ChampionUser[] = useMemo(() => {
     if (!champion) return [];
     if (champion.users && champion.users.length > 0) {
-      return champion.users;
+      return champion.users.filter((u) => (Number(u.points) || 0) > 0);
     }
-    if (champion.name) {
+    if (champion.name && (Number(champion.points) || 0) > 0) {
       return [{ name: champion.name, points: champion.points || 0 }];
     }
     return [];
@@ -87,13 +87,13 @@ export const YesterdayChampionCard: React.FC<YesterdayChampionCardProps> = ({
         <span>গতকালকের সেরা ({users.length} জন যৌথভাবে)</span>
       </div>
       <div className="flex flex-wrap justify-end gap-1.5 bg-gradient-to-r from-amber-50 to-amber-100/90 border border-amber-300/90 rounded-xl p-1.5 shadow-xs hover:border-amber-400 transition-colors">
-        {users.map((u, idx) => (
+        {users.slice(0, 2).map((u, idx) => (
           <div
             key={u.id || idx}
             className="flex items-center bg-white/95 border border-amber-200/90 rounded-lg px-2 py-1 shadow-2xs"
           >
             <div className="text-right mr-1.5">
-              <div className="text-[11px] font-bold text-gray-800 leading-tight max-w-[95px] truncate" title={u.name}>
+              <div className="text-[11px] font-bold text-gray-800 leading-tight max-w-[90px] truncate" title={u.name}>
                 {u.name}
               </div>
               <div className="text-[9.5px] font-extrabold text-amber-700 leading-none mt-0.5">
@@ -105,6 +105,11 @@ export const YesterdayChampionCard: React.FC<YesterdayChampionCardProps> = ({
             </div>
           </div>
         ))}
+        {users.length > 2 && (
+          <div className="flex items-center bg-amber-200/90 text-amber-900 font-extrabold text-[10px] rounded-lg px-2 py-1 shadow-2xs">
+            +{users.length - 2} জন
+          </div>
+        )}
       </div>
     </div>
   );

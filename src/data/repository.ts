@@ -1181,24 +1181,53 @@ export class IbadatRepository {
 
     const userList: Array<{ id: string; name: string; points: number }> = [];
     const currentUid = this.getCurrentUser()?.id || 'me';
-    userList.push({
-      id: currentUid,
-      name: this.getUserName(),
-      points: userYesterday
-    });
+
+    if (userYesterday > 0) {
+      userList.push({
+        id: currentUid,
+        name: this.getUserName(),
+        points: userYesterday
+      });
+    }
 
     if (this.communityUsers && this.communityUsers.length > 0) {
       this.communityUsers.forEach((u) => {
         if (currentUid && u.uid === currentUid) return;
-        const pts = Number(u.pointsHistory?.[yesterdayKey])
-          || Number(u.pointsHistory?.[yesterdayAlt])
-          || Number(u.stats?.yesterdayPoints)
-          || 0;
-        userList.push({
-          id: u.uid,
-          name: u.name || 'ব্যবহারকারী',
-          points: pts
-        });
+        // Strictly get actual recorded points for yesterday from pointsHistory
+        let pts = 0;
+        if (u.pointsHistory && typeof u.pointsHistory === 'object') {
+          if (u.pointsHistory[yesterdayKey] !== undefined) {
+            pts = Math.max(pts, Number(u.pointsHistory[yesterdayKey]) || 0);
+          }
+          if (u.pointsHistory[yesterdayAlt] !== undefined) {
+            pts = Math.max(pts, Number(u.pointsHistory[yesterdayAlt]) || 0);
+          }
+        }
+
+        if (pts === 0 && u.fullState) {
+          let fs: any = u.fullState;
+          if (typeof fs === 'string') {
+            try {
+              fs = JSON.parse(fs);
+            } catch {}
+          }
+          if (fs?.pointsHistory && typeof fs.pointsHistory === 'object') {
+            if (fs.pointsHistory[yesterdayKey] !== undefined) {
+              pts = Math.max(pts, Number(fs.pointsHistory[yesterdayKey]) || 0);
+            }
+            if (fs.pointsHistory[yesterdayAlt] !== undefined) {
+              pts = Math.max(pts, Number(fs.pointsHistory[yesterdayAlt]) || 0);
+            }
+          }
+        }
+
+        if (pts > 0) {
+          userList.push({
+            id: u.uid,
+            name: u.name || 'ব্যবহারকারী',
+            points: pts
+          });
+        }
       });
     }
 
@@ -1213,11 +1242,7 @@ export class IbadatRepository {
       };
     }
 
-    return {
-      name: this.getUserName(),
-      points: userYesterday,
-      users: [{ id: currentUid, name: this.getUserName(), points: userYesterday }]
-    };
+    return null;
   }
 
   getLeaderboard(metricType: string): LeaderboardUser[] {
@@ -1243,7 +1268,9 @@ export class IbadatRepository {
       const yesterdayIso = this.formatIsoDate(yesterday);
 
       this.communityUsers.forEach((u) => {
-        if (currentUid && u.uid === currentUid) return;
+        if (currentUid && (u.uid === currentUid || (u as any).id === currentUid)) return;
+        if (!currentUid && userName && userName !== 'ব্যবহারকারী' && u.name === userName) return;
+        if (u.uid === 'user_me' || (u as any).id === 'user_me') return;
         const history = u.pointsHistory || {};
         let pts = 0;
 
@@ -1272,7 +1299,11 @@ export class IbadatRepository {
           }
         } else {
           // Total Lifetime Points
-          if (u.fullState?.stats?.totalLifetimePoints) {
+          if (u.stats?.totalLifetimePoints) {
+            pts = Number(u.stats.totalLifetimePoints) || 0;
+          } else if (u.stats?.totalPoints) {
+            pts = Number(u.stats.totalPoints) || 0;
+          } else if (u.fullState?.stats?.totalLifetimePoints) {
             pts = Number(u.fullState.stats.totalLifetimePoints) || 0;
           } else {
             Object.values(history).forEach((val) => {

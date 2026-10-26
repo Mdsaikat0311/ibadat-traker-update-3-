@@ -329,9 +329,11 @@ export async function fetchUserRank(statKey: string): Promise<number | null> {
 export async function fetchFirebaseChampion(): Promise<import('../types/ibadat').ChampionInfo | null> {
   try {
     const champions = await getTopUsersByMetric('yesterdayPoints', 0);
-    if (champions.length > 0) {
-      const topPoints = champions[0].points;
-      const topUsers = champions.filter((u) => u.points === topPoints);
+    // CRITICAL: Only users who actually scored points (> 0) yesterday qualify as champions
+    const validChampions = champions.filter((u) => (Number(u.points) || 0) > 0);
+    if (validChampions.length > 0) {
+      const topPoints = validChampions[0].points;
+      const topUsers = validChampions.filter((u) => u.points === topPoints);
       return {
         name: topUsers.map((u) => u.name).join(', '),
         points: topPoints,
