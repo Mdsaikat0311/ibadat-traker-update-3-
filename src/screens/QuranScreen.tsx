@@ -734,7 +734,7 @@ export const QuranScreen: React.FC<QuranScreenProps> = ({ onShowAlert, onReading
 
         {/* Reader Body Content */}
         <div className={`flex-1 px-3 py-3 max-w-xl mx-auto w-full space-y-3 transition-all ${
-          currentPlayingAyah !== null ? 'pb-36' : 'pb-16'
+          currentPlayingAyah !== null ? 'pb-48' : 'pb-24'
         }`}>
           {/* Ornate Islamic Framed Banner (100% matches Screenshot) */}
           <div className="relative rounded-lg overflow-hidden border border-[#8f7347]/90 bg-[#121915] p-2 shadow-md">
@@ -936,9 +936,9 @@ export const QuranScreen: React.FC<QuranScreenProps> = ({ onShowAlert, onReading
           )}
         </div>
 
-        {/* Docked Quran Audio Player Bar (100% matches User Screenshot - z-50 unobstructed) */}
+        {/* Docked Quran Audio Player Bar (docks directly above BottomNav) */}
         {(isPlayingAudio || currentPlayingAyah !== null) && selectedSurah && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0c0f0d]/98 border-t border-[#4a3628] shadow-[0_-8px_30px_rgba(0,0,0,0.9)] backdrop-blur-md pt-2 pb-6 px-4 flex flex-col items-center max-w-[420px] mx-auto animate-in slide-in-from-bottom duration-300">
+          <div className="fixed bottom-16 left-0 right-0 z-30 bg-[#0c0f0d]/98 border-t border-b border-[#4a3628] shadow-[0_-8px_30px_rgba(0,0,0,0.9)] backdrop-blur-md py-2 px-4 flex flex-col items-center max-w-[420px] mx-auto animate-in slide-in-from-bottom duration-300">
             {/* Top Pill with Surah & Verse info and 9-dot rosette ornaments */}
             <div className="flex items-center justify-center gap-3 px-5 py-1.5 rounded-full bg-[#251b14] border border-[#443226] shadow-md text-xs font-medium text-[#dfc5ac]">
               <svg className="w-3.5 h-3.5 text-[#bfa085] opacity-80 shrink-0" viewBox="0 0 24 24" fill="currentColor">

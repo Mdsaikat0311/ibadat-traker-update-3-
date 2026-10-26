@@ -86,7 +86,6 @@ export const App: React.FC = () => {
   const [autoHadithEnabled, setAutoHadithEnabled] = useState<boolean>(repository.isAutoHadithEnabled());
   const [generalReminder, setGeneralReminder] = useState(repository.getGeneralReminder());
   const [lifetimeStartDate, setLifetimeStartDate] = useState<string>(repository.getLifetimeStartDate());
-  const [isQuranReading, setIsQuranReading] = useState<boolean>(false);
 
   const [communityUpdateTick, setCommunityUpdateTick] = useState<number>(0);
 
@@ -753,7 +752,6 @@ export const App: React.FC = () => {
         <div className={activeTab === 'quran' ? 'contents' : 'hidden'}>
           <QuranScreen
             onShowAlert={showAlert}
-            onReadingChange={setIsQuranReading}
           />
         </div>
 
@@ -820,10 +818,8 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Fixed Bottom Navigation (hidden during full-screen Quran reading so audio player is unobstructed) */}
-      {!(activeTab === 'quran' && isQuranReading) && (
-        <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
-      )}
+      {/* Fixed Bottom Navigation */}
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* Modals & Dialogs */}
       {detailsModal && (
